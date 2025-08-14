@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Database - Menu Deals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1e293b;
+            color: white;
+        }
+        .container {
+            background: #334155;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #10b981;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .error {
+            background: #ef4444;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .info {
+            background: #0ea5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #f59e0b;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #000;
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Clear Database Data</h1>
+        
+        <div class="warning">
+            <strong>⚠️ WARNING:</strong> This will permanently delete all deals and restaurants from your Supabase database. This action cannot be undone!
+        </div>
+        
+        <div class="info">
+            <strong>Current Database Status:</strong><br>
+            <span id="statusInfo">Loading...</span>
+        </div>
+        
+        <div>
+            <input type="password" id="adminKey" placeholder="Enter admin key" />
+            <br>
+            <small style="color: #94a3b8;">Default: admin123 (change this in production!)</small>
+        </div>
+        
+        <button onclick="checkDatabaseStatus()">Check Database Status</button>
+        <button onclick="clearDatabase()" id="clearBtn">Clear All Database Data</button>
+        
+        <div id="successMessage" class="success">
+            ✅ Database data successfully cleared!
+        </div>
+        
+        <div id="errorMessage" class="error">
+            ❌ <span id="errorText">Error occurred</span>
+        </div>
+        
+        <div id="details" style="margin-top: 20px; text-align: left; background: #475569; padding: 15px; border-radius: 4px;">
+            <h3>What this does:</h3>
+            <ul>
+                <li>Deletes all records from the <code>Deal</code> table</li>
+                <li>Deletes all records from the <code>Restaurant</code> table</li>
+                <li>Clears the database completely for fresh mock data</li>
+                <li>Requires admin authentication</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function checkDatabaseStatus() {
+            try {
+                const response = await fetch('/api/admin/clear-database');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('statusInfo').innerHTML = `
+                        <strong>Deals:</strong> ${data.dealCount} records<br>
+                        <strong>Restaurants:</strong> ${data.restaurantCount} records<br>
+                        <strong>Last checked:</strong> ${new Date().toLocaleString()}
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to check status');
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+                document.getElementById('statusInfo').textContent = 'Error loading status: ' + error.message;
+            }
+        }
+        
+        async function clearDatabase() {
+            const adminKey = document.getElementById('adminKey').value;
+            
+            if (!adminKey) {
+                alert('Please enter the admin key');
+                return;
+            }
+            
+            if (!confirm('Are you absolutely sure you want to delete ALL database data? This cannot be undone!')) {
+                return;
+            }
+            
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.disabled = true;
+            clearBtn.textContent = 'Clearing...';
+            
+            try {
+                const response = await fetch('/api/admin/clear-database', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    console.log('Database cleared successfully:', data);
+                    
+                    // Refresh status
+                    setTimeout(() => {
+                        checkDatabaseStatus();
+                    }, 1000);
+                    
+                } else {
+                    throw new Error(data.error || 'Failed to clear database');
+                }
+                
+            } catch (error) {
+                console.error('Clear database error:', error);
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
+                document.getElementById('successMessage').style.display = 'none';
+            } finally {
+                clearBtn.disabled = false;
+                clearBtn.textContent = 'Clear All Database Data';
+            }
+        }
+        
+        // Auto-check status on load
+        checkDatabaseStatus();
+    </script>
+</body>
+</html>

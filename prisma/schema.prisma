@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  RESTAURANT_OWNER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  TRIAL
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum PromotionPosition {
+  POSITION_1
+  POSITION_2
+  POSITION_3
+}
+
+// Models
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  restaurant   Restaurant?
+}
+
+model Restaurant {
+  id                String             @id @default(cuid())
+  name              String
+  address           String
+  latitude          Float
+  longitude         Float
+  phoneNumber       String
+  whatsAppNumber    String?
+  operatingHours    Json? // Store as JSON: {"monday": {"open": "09:00", "close": "22:00"}, ...}
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  promoCredits      Int                @default(0)
+  trialClickCount   Int                @default(0) // Track trial clicks
+  trialStartDate    DateTime           @default(now())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  // Relations
+  ownerId           String             @unique
+  owner             User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deals             Deal[]
+  
+  @@index([latitude, longitude]) // For geospatial queries
+}
+
+model Deal {
+  id           String      @id @default(cuid())
+  title        String
+  description  String
+  price        Float
+  images       String[]    // Array of image URLs
+  daysActive   DayOfWeek[] // Array of days when deal is active
+  isRecurring  Boolean     @default(true)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  // Relations
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  promotions   Promotion[]
+  analytics    Analytics[]
+}
+
+model Promotion {
+  id       String            @id @default(cuid())
+  date     DateTime          // Specific date for the promotion
+  position PromotionPosition
+  createdAt DateTime         @default(now())
+  
+  // Relations
+  dealId   String
+  deal     Deal              @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  @@unique([date, position]) // Only one deal per position per day
+}
+
+model Analytics {
+  id         String   @id @default(cuid())
+  date       DateTime @default(now()) @db.Date
+  viewCount  Int      @default(0)
+  clickCount Int      @default(0) // Combined "Call" and "WhatsApp" clicks
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  dealId     String
+  deal       Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  @@unique([dealId, date]) // One analytics record per deal per day
+  @@index([date])
+}

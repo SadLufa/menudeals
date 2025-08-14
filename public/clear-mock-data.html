@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Mock Data - Menu Deals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1e293b;
+            color: white;
+        }
+        .container {
+            background: #334155;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .success {
+            background: #10b981;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .info {
+            background: #0ea5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Clear Mock Data</h1>
+        <div class="info">
+            <strong>Current Mock Deals:</strong> <span id="currentCount">Loading...</span>
+        </div>
+        
+        <p>This will remove all mock deals from localStorage so you can generate fresh location-aware mock data.</p>
+        
+        <button onclick="clearMockData()">Clear All Mock Data</button>
+        <button onclick="checkMockData()">Check Mock Data</button>
+        
+        <div id="successMessage" class="success">
+            ✅ Mock data successfully cleared!
+        </div>
+        
+        <div id="details" style="margin-top: 20px; text-align: left; background: #475569; padding: 15px; border-radius: 4px;">
+            <h3>Details:</h3>
+            <ul id="detailsList">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function clearMockData() {
+            if (confirm('Are you sure you want to clear all mock data? This action cannot be undone.')) {
+                try {
+                    console.log('Starting comprehensive mock data clearing...');
+                    
+                    // Clear all menudeals related localStorage keys
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.includes('menudeals')) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    
+                    console.log('Found localStorage keys to remove:', keysToRemove);
+                    
+                    // Remove each key
+                    keysToRemove.forEach(key => {
+                        localStorage.removeItem(key);
+                        console.log('Removed:', key);
+                    });
+                    
+                    // Also clear any potential other related keys
+                    localStorage.removeItem('menudeals_mock_deals');
+                    localStorage.removeItem('menudeals_restaurants');
+                    localStorage.removeItem('lastSuperBoostSeen');
+                    
+                    document.getElementById('successMessage').style.display = 'block';
+                    console.log('All mock data cleared successfully');
+                    
+                    // Update display
+                    checkMockData();
+                    
+                    // Alert user to refresh the main app
+                    alert('Mock data cleared! Please refresh your main app page (localhost:3000) to see the changes.');
+                    
+                } catch (error) {
+                    alert('Error clearing mock data: ' + error.message);
+                    console.error('Error:', error);
+                }
+            }
+        }
+        
+        function checkMockData() {
+            try {
+                const mockDeals = JSON.parse(localStorage.getItem('menudeals_mock_deals') || '[]');
+                const restaurants = JSON.parse(localStorage.getItem('menudeals_restaurants') || '[]');
+                
+                // Get all menudeals related keys
+                const menudealsKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.includes('menudeals')) {
+                        menudealsKeys.push(key);
+                    }
+                }
+                
+                document.getElementById('currentCount').textContent = mockDeals.length + ' deals';
+                
+                const detailsList = document.getElementById('detailsList');
+                detailsList.innerHTML = `
+                    <li><strong>Mock Deals:</strong> ${mockDeals.length} items</li>
+                    <li><strong>Mock Restaurants:</strong> ${restaurants.length} items</li>
+                    <li><strong>All MenuDeals Keys:</strong> ${menudealsKeys.length > 0 ? menudealsKeys.join(', ') : 'None found'}</li>
+                    <li><strong>Total localStorage Keys:</strong> ${localStorage.length}</li>
+                    <li><strong>Last Updated:</strong> ${new Date().toLocaleString()}</li>
+                `;
+                
+                console.log('Current mock deals:', mockDeals);
+                console.log('Current restaurants:', restaurants);
+                console.log('All menudeals keys:', menudealsKeys);
+                
+                // Show individual deal info if any exist
+                if (mockDeals.length > 0) {
+                    console.log('Individual deals:', mockDeals.map(deal => ({
+                        id: deal.id,
+                        title: deal.title,
+                        restaurant: deal.restaurant
+                    })));
+                }
+                
+            } catch (error) {
+                console.error('Error checking mock data:', error);
+                document.getElementById('currentCount').textContent = 'Error loading';
+            }
+        }
+        
+        // Auto-check on load
+        checkMockData();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(checkMockData, 5000);
+    </script>
+</body>
+</html>
