@@ -49,6 +49,6 @@ export async function testSupabaseConnection() {
 
 // Run test automatically in browser
 if (typeof window !== 'undefined') {
-  (window as any).testSupabaseConnection = testSupabaseConnection;
+  (window as unknown as { testSupabaseConnection: typeof testSupabaseConnection }).testSupabaseConnection = testSupabaseConnection;
   console.log('🧪 Test function loaded! Run: testSupabaseConnection()');
 }

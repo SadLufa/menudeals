@@ -95,7 +95,6 @@ export default function AdminDashboard() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   
   // Account Settings State
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [accountForm, setAccountForm] = useState({
     currentEmail: '',
     newEmail: '',
