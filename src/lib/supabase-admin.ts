@@ -260,43 +260,48 @@ export const supabaseRestaurantService = {
 
 // Restaurant login service
 export const supabaseLoginService = {
-  // Authenticate restaurant user
-  async authenticate(email: string, password: string) {
+  // Authenticate restaurant user - using restaurant table directly
+  async authenticate(username: string, password: string) {
     const supabase = getSupabaseClient();
     if (!supabase) return { success: false, error: 'No Supabase client' };
 
     try {
-      // Find user with restaurant
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select(`
-          *,
-          restaurant:restaurants(*)
-        `)
-        .eq('email', email)
-        .eq('passwordHash', password) // In production, use proper password hashing
-        .eq('role', 'RESTAURANT_OWNER')
-        .single();
+      console.log('🔑 Attempting restaurant login for:', username);
+      
+      // Look for restaurant by username OR email with matching password
+      const { data: restaurants, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .or(`username.eq.${username},email.eq.${username}`)
+        .eq('password', password)
+        .limit(1);
 
-      if (userError || !user) {
+      console.log('🔍 Restaurant query result:', { restaurants, error: restaurantError });
+
+      if (restaurantError) {
+        console.error('❌ Database error:', restaurantError);
+        return { success: false, error: 'Database error during authentication' };
+      }
+
+      if (!restaurants || restaurants.length === 0) {
+        console.log('❌ No matching restaurant found');
         return { success: false, error: 'Invalid credentials' };
       }
 
-      if (!user.restaurant) {
-        return { success: false, error: 'No restaurant associated with this account' };
-      }
+      const restaurant = restaurants[0];
+      console.log('✅ Restaurant authenticated:', restaurant.name);
 
       return {
         success: true,
         data: {
-          userId: user.id,
-          email: user.email,
-          restaurantId: user.restaurant.id,
-          restaurantName: user.restaurant.name,
-          subscriptionStatus: user.restaurant.subscriptionStatus
+          restaurantId: restaurant.id,
+          restaurantName: restaurant.name,
+          email: restaurant.email,
+          subscriptionStatus: restaurant.subscriptionStatus || 'TRIAL'
         }
       };
     } catch (error) {
+      console.error('❌ Authentication error:', error);
       return { success: false, error: (error as Error).message };
     }
   }

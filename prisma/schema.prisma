@@ -20,6 +20,7 @@ enum SubscriptionStatus {
   ACTIVE
   INACTIVE
   TRIAL
+  PAUSED
 }
 
 enum DayOfWeek {
@@ -46,30 +47,30 @@ model User {
   role         UserRole
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  
-  // Relations
-  restaurant   Restaurant?
 }
 
 model Restaurant {
   id                String             @id @default(cuid())
   name              String
-  address           String
-  latitude          Float
-  longitude         Float
-  phoneNumber       String
-  whatsAppNumber    String?
-  operatingHours    Json? // Store as JSON: {"monday": {"open": "09:00", "close": "22:00"}, ...}
+  email             String?            // Restaurant contact email
+  location          String             // Address/location string
+  contactPerson     String?            // Contact person name
+  contactNumber     String?            // Phone number
+  username          String?            // Login username
+  password          String?            // Login password
+  whatsappLink      String?            // WhatsApp contact link
+  customerCode      String?            // Customer reference code
+  latitude          Float?
+  longitude         Float?
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   promoCredits      Int                @default(0)
-  trialClickCount   Int                @default(0) // Track trial clicks
+  trialClickLimit   Int                @default(30)
+  trialClicksUsed   Int                @default(0)
   trialStartDate    DateTime           @default(now())
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   
   // Relations
-  ownerId           String             @unique
-  owner             User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   deals             Deal[]
   
   @@index([latitude, longitude]) // For geospatial queries

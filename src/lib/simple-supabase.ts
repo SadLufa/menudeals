@@ -229,7 +229,8 @@ export const simpleRestaurantService = {
           latitude: restaurantData.latitude || 0,
           longitude: restaurantData.longitude || 0,
           whatsapp_number: restaurantData.whatsapp || '',
-          password_hash: 'temp123' // Will implement proper hashing later
+          password: 'temp123', // Store as plain text password for now
+          username: restaurantData.email // Use email as username by default
         })
         .select()
         .single();
@@ -242,7 +243,7 @@ export const simpleRestaurantService = {
       console.log('✅ Restaurant added successfully:', restaurant.name);
       return { 
         success: true, 
-        data: { message: `Restaurant "${restaurant.name}" added successfully!` }
+        data: { message: `Restaurant "${restaurant.name}" added successfully! Login: ${restaurantData.email} / temp123` }
       };
     } catch (error) {
       console.error('❌ Failed to add restaurant:', error);
